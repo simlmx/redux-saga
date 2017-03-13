@@ -434,7 +434,10 @@ export default function proc(
       } catch(error) {
         // If we have a channel or `put.resolve` was used then bubble up the error.
         if (channel || resolve) return cb(error, true)
-        log('error', `uncaught at ${name}`, error.stack || error.message || error)
+        if (error.message) {
+          log('error', 'error.message', error.message)
+        }
+        log('error', `uncaught at ${name}`, error.stack || error)
       }
 
       if(resolve && is.promise(result)) {
