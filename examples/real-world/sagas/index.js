@@ -1,5 +1,5 @@
 /* eslint-disable no-constant-condition */
-import { take, put, call, fork, select } from 'redux-saga/effects'
+import { take, put, call, fork, select, all } from 'redux-saga/effects'
 import { api, history } from '../services'
 import * as actions from '../actions'
 import { getUser, getRepo, getStarredByUser, getStargazersByRepo } from '../reducers/selectors'
@@ -19,7 +19,7 @@ const firstPageStargazersUrl = fullName => `repos/${fullName}/stargazers`
 // entity :  user | repo | starred | stargazers
 // apiFn  : api.fetchUser | api.fetchRepo | ...
 // id     : login | fullName
-// url    : next page url. If not provided will use pass it to apiFn
+// url    : next page url. If not provided will use pass id to apiFn
 function* fetchEntity(entity, apiFn, id, url) {
   yield put( entity.request(id) )
   const {response, error} = yield call(apiFn, url || id)
@@ -120,11 +120,11 @@ function* watchLoadMoreStargazers() {
 }
 
 export default function* root() {
-  yield [
+  yield all([
     fork(watchNavigate),
     fork(watchLoadUserPage),
     fork(watchLoadRepoPage),
     fork(watchLoadMoreStarred),
     fork(watchLoadMoreStargazers)
-  ]
+  ])
 }

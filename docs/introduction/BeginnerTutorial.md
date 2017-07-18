@@ -82,14 +82,21 @@ So far, our Saga does nothing special. It just logs a message then exits.
 
 Now let's add something closer to the original Counter demo. To illustrate asynchronous calls, we will add another button to increment the counter 1 second after the click.
 
-First thing's first, we'll provide an additional callback `onIncrementAsync` to the UI component.
+First things first, we'll provide an additional button and a callback `onIncrementAsync` to the UI component.
 
 ```javascript
 const Counter = ({ value, onIncrement, onDecrement, onIncrementAsync }) =>
   <div>
-    {' '}
     <button onClick={onIncrementAsync}>
       Increment after 1 second
+    </button>
+    {' '}
+    <button onClick={onIncrement}>
+      Increment
+    </button>
+    {' '}
+    <button onClick={onDecrement}>
+      Decrement
     </button>
     <hr />
     <div>
@@ -108,7 +115,7 @@ function render() {
     <Counter
       value={store.getState()}
       onIncrement={() => action('INCREMENT')}
-      onDecrement={() => action('DECREMENT')} 
+      onDecrement={() => action('DECREMENT')}
       onIncrementAsync={() => action('INCREMENT_ASYNC')} />,
     document.getElementById('root')
   )
@@ -128,6 +135,8 @@ Add the following code to the `sagas.js` module:
 ```javascript
 import { delay } from 'redux-saga'
 import { put, takeEvery } from 'redux-saga/effects'
+
+// ...
 
 // Our worker Saga: will perform the async increment task
 export function* incrementAsync() {
@@ -158,12 +167,17 @@ Next, we created another Saga `watchIncrementAsync`. We use `takeEvery`, a helpe
 Now we have 2 Sagas, and we need to start them both at once. To do that, we'll add a `rootSaga` that is responsible for starting our other Sagas. In the same file `sagas.js`, add the following code:
 
 ```javascript
+import { delay } from 'redux-saga'
+import { put, takeEvery, all } from 'redux-saga/effects'
+
+// ...
+
 // single entry point to start all Sagas at once
 export default function* rootSaga() {
-  yield [
+  yield all([
     helloSaga(),
     watchIncrementAsync()
-  ]
+  ])
 }
 ```
 
@@ -247,15 +261,16 @@ test('incrementAsync Saga test', (assert) => {
 ```
 
 The issue is how do we test the return value of `delay`? We can't do a simple equality test
-on Promises. If `delay` returned a *normal* value, things would've been be easier to test.
+on Promises. If `delay` returned a *normal* value, things would've been easier to test.
 
 Well, `redux-saga` provides a way to make the above statement possible. Instead of calling
 `delay(1000)` directly inside `incrementAsync`, we'll call it *indirectly*:
 
 ```javascript
-// ...
 import { delay } from 'redux-saga'
-import { put, call, takeEvery } from 'redux-saga/effects'
+import { put, takeEvery, all, call } from 'redux-saga/effects'
+
+// ...
 
 export function* incrementAsync() {
   // use the call Effect
